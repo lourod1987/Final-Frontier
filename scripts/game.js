@@ -21,6 +21,7 @@ class Game extends Phaser.Scene {
 
     create() { 
         this.player = this.add.image(400, 300, 'player');
+        player = this.physics.add.
 
         const asteroids = this.physics.add.group({
             key: 'asteroid',
