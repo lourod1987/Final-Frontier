@@ -1,3 +1,18 @@
+/*//  When the player sprite his the health packs, call this function ...
+this.physics.add.overlap(sprite, healthGroup, spriteHitHealth);
+
+function spriteHitHealth (sprite, health)
+{
+    //  Hide the sprite
+    healthGroup.killAndHide(health);
+
+    //  And disable the body
+    health.body.enable = false;
+
+    //  Add 10 health, it'll never go over maxHealth
+    currentHealth = Phaser.Math.MaxAdd(currentHealth, 10, maxHealth);
+}*/
+
 class Game extends Phaser.Scene {
     constructor() {
         super({key: "Game"});
@@ -14,38 +29,58 @@ class Game extends Phaser.Scene {
         this.load.image('Bullet', 'visuals/Key.png');
         this.load.image('asteroid', 'visuals/Rock.png');
         this.load.image('Star', 'visuals/Star.png');
+        this.load.image('particleBlue', 'visuals/particleBlue.png');
+        this.load.image('splashBG', 'visuals/blue_space_scape_by_heatstroke99-d331bty.png');
 
         //audio
         this.load.audio('laser', ['audio/Laser_Shoot6.wav']);
     }
 
-    create() { 
-        this.player = this.add.image(400, 300, 'player');
-        player = this.physics.add.
+    
 
-        const asteroids = this.physics.add.group({
+    create() {
+        const BG = this.add.image(400,300, 'splashBG');
+        const particles = this.add.particles('particleBlue');
+
+        const emitter = particles.createEmitter({
+            speed: 20,
+            scale: { start: 0.5, end: 0},
+            blendMode: 'ADD'
+        });
+
+        this.player = this.physics.add.image(400, 300, 'player');
+        // this.player = this.matter.add.image(400, 300, 'player').setIgnoreGravity(true);
+
+        emitter.startFollow(this.player);
+        this.player.setBounce(0.2); //player bounces when landing on ground
+        this.player.setCollideWorldBounds(true);
+        
+        // this.matter.world.setBounds(); //defaults values
+        // this.matter.world.setBounds(0, 0, 800, 600, 32, true, true, true, true);
+
+        var asteroids = this.physics.add.group({
             key: 'asteroid',
-            repeat: 5,
-            setXY: {x: 25, y: 10, stepX: 150}
+            repeat: 4,
+            setXY: {x: 25, y: 80, stepX: 150},
+            immovable: false
         });
 
-        /* key inputs via event driven callbacks
-        this.input.keyboard.on('keydown_D', event => {
-            this.player.x += 10;
+        asteroids.children.iterate(function (child) {
+            child.setCollideWorldBounds(true);
+            child.setGravityY(200); 
         });
 
-        this.input.keyboard.on('keydown_A', event => {
-            this.player.x--;
-        });
 
-        this.input.keyboard.on('keydown_S', event => {
-            this.player.y += 10;
-        });
+        /* Generates asteriods for matterjs physics
+        for (var i = 0; i < 5; i++) {
+            var asteroid = this.matter.add.image(Phaser.Math.Between(100, 700), Phaser.Math.Between(600, 0), 'asteroid');
+            asteroid.setCircle();
+            asteroid.setFriction(0.005);
+            asteroid.setBounce(1);
+        }*/
 
-        this.input.keyboard.on('keydown_W', event => {
-            this.player.y -= 10;
-        });
-        */
+        const collision = this.physics.add.collider(this.player, asteroids);
+        
         //key inputs tracked via polling
         this.key_W = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
         this.key_S = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
@@ -58,38 +93,17 @@ class Game extends Phaser.Scene {
             this.player.y = event.y;
         });
 
-        /*  this is an event driven laser shot does not allow simultaneous movement and shooting
-        this.input.keyboard.on('keydown_SPACE', event => {
-            const physicsImage = this.physics.add.image(this.player.x, this.player.y, "Bullet");
-            physicsImage.setVelocity(Phaser.Math.RND.integerInRange(-100, 100), -300);
-            this.laser = this.sound.add("laser");
-            this.laser.play();
-            // this.laser.rate = 0.5;
-        });*/
-
-
-        /* Alternate things to do with Audio
-        this.input.keyboard.on('keydown_P', event => {
-            this.laser = this.sound.add("laser");
-            this.laser.play();
-            this.laser.rate = 0.5;
-            this.laser.loop = !this.laser.loop;
-            if (this.laser.loop) {
-                this.laser.play();
-            }
-
-            if (this.laser.isPlaying) {
-                this.laser.pause();
-            } else {
-                this.laser.resume();
-            }
-        });*/
-
         this.input.keyboard.on('keydown', event => {
             if (event.key === "2") {
                 this.scene.start("Example2");
             }
         });
+
+
+        this.input.on('pointerdown', function () {
+            // this.cameras.main.shake(25);
+            // this.cameras.main.flash();
+        }, this);
     }
 
     update(delta) {
@@ -110,7 +124,7 @@ class Game extends Phaser.Scene {
         }
 
         if (this.key_SPACE.isDown) {
-            const physicsImage = this.physics.add.image(this.player.x, this.player.y, "Bullet");
+            var physicsImage = this.physics.add.image(this.player.x, this.player.y, "Bullet");
             
             physicsImage.setVelocity(Phaser.Math.RND.integerInRange(-100, 100), -300);
             this.laser = this.sound.add("laser");
@@ -120,6 +134,11 @@ class Game extends Phaser.Scene {
 }
 
 
+function hitAsteroid() {
+    player.setTint(0xff0000);
+    gameOver = true;
+}
+
 class Splash extends Phaser.Scene {
     constructor() {
         super({key: "Splash"});
@@ -127,13 +146,15 @@ class Splash extends Phaser.Scene {
 
     preload() {
         //images
-        this.load.image('splashBG', 'visuals/');
+        this.load.image('splashBG', 'visuals/blue_space_scape_by_heatstroke99-d331bty.png');
 
         //audio
         this.load.audio('splash', ['audio/Edit_erh_pulsar.wav']);
     }
 
     create() {
+        this.BG = this.add.tileSprite(0, 0, 1600, 1200, 'splashBG');
+
         this.text = this.add.text(280, 30, "Final Frontier", {font: "40px Impact"});
 
         const tween = this.tweens.add({
@@ -165,6 +186,8 @@ class Splash extends Phaser.Scene {
     }
 
     update(delta) {
+        // this.BG.tilePosition.y += 0.2;
+        // this.BG.scrollY += 0.2 ;
     }
 }
 
@@ -175,9 +198,9 @@ var config = {
     width: 800,
     height: 600,
     physics: {
-        default: 'arcade',
+        default: 'arcade', //matter
         arcade: {
-            gravity: {y: 50}
+            gravity: {y: 0}
         }
     },
     scene: [Splash, Game]
@@ -344,3 +367,54 @@ function hitBomb() {
     player.anims.play('turn');
     gameOver = true;
 }*/
+
+
+
+
+
+/* key inputs via event driven callbacks
+        this.input.keyboard.on('keydown_D', event => {
+            this.player.x += 10;
+        });
+
+        this.input.keyboard.on('keydown_A', event => {
+            this.player.x--;
+        });
+
+        this.input.keyboard.on('keydown_S', event => {
+            this.player.y += 10;
+        });
+
+        this.input.keyboard.on('keydown_W', event => {
+            this.player.y -= 10;
+        });
+        */
+
+
+
+       /*  this is an event driven laser shot does not allow simultaneous movement and shooting
+        this.input.keyboard.on('keydown_SPACE', event => {
+            const physicsImage = this.physics.add.image(this.player.x, this.player.y, "Bullet");
+            physicsImage.setVelocity(Phaser.Math.RND.integerInRange(-100, 100), -300);
+            this.laser = this.sound.add("laser");
+            this.laser.play();
+            // this.laser.rate = 0.5;
+        });*/
+
+
+        /* Alternate things to do with Audio
+        this.input.keyboard.on('keydown_P', event => {
+            this.laser = this.sound.add("laser");
+            this.laser.play();
+            this.laser.rate = 0.5;
+            this.laser.loop = !this.laser.loop;
+            if (this.laser.loop) {
+                this.laser.play();
+            }
+
+            if (this.laser.isPlaying) {
+                this.laser.pause();
+            } else {
+                this.laser.resume();
+            }
+        });*/
